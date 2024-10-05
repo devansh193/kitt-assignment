@@ -4,8 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CalendarIcon, ArrowLeftRight } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -15,39 +13,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { mockFlights } from "./data";
-import { FlightCard } from "./flight-data";
-// Mock data for airport suggestions
-const airportSuggestions = [
-  {
-    code: "JFK",
-    name: "John F. Kennedy International Airport",
-    city: "New York",
-  },
-  { code: "LHR", name: "London Heathrow Airport", city: "London" },
-  { code: "CDG", name: "Charles de Gaulle Airport", city: "Paris" },
-  { code: "HND", name: "Tokyo Haneda Airport", city: "Tokyo" },
-  { code: "DXB", name: "Dubai International Airport", city: "Dubai" },
-  { code: "SIN", name: "Singapore Changi Airport", city: "Singapore" },
-  {
-    code: "LAX",
-    name: "Los Angeles International Airport",
-    city: "Los Angeles",
-  },
-  { code: "AMS", name: "Amsterdam Airport Schiphol", city: "Amsterdam" },
-  { code: "FRA", name: "Frankfurt Airport", city: "Frankfurt" },
-  { code: "IST", name: "Istanbul Airport", city: "Istanbul" },
-];
+import { mockFlights, mockAirports } from "./data";
+import FlightCard from "./flight-data";
+import { SelectFlight } from "./select";
 
 export default function FlightSearch() {
-  const [flightType, setFlightType] = useState("oneWay");
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
   const [departureDate, setDepartureDate] = useState<Date>();
@@ -66,89 +36,48 @@ export default function FlightSearch() {
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
-    setSearchResults(mockFlights);
+    // Filter flights for both directions
+    const filteredFlights = mockFlights.filter(
+      (flight) =>
+        (flight.sourceCode === source &&
+          flight.destinationCode === destination) ||
+        (flight.sourceCode === destination && flight.destinationCode === source)
+    );
+    setSearchResults(filteredFlights);
+
     setIsSearching(false);
   };
 
   return (
     <div className="container mx-auto p-4">
-      <Card className="">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-black">
             Flight Search
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6">
-            <RadioGroup
-              defaultValue="oneWay"
-              onValueChange={setFlightType}
-              className="flex space-x-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="oneWay"
-                  id="oneWay"
-                  className="border-black text-black"
-                />
-                <Label htmlFor="oneWay" className="text-black">
-                  One-way
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="roundTrip"
-                  id="roundTrip"
-                  className="border-black text-black"
-                />
-                <Label htmlFor="roundTrip" className="text-black">
-                  Round-trip
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-9 gap-4 mb-6 items-end">
-            <div className="relative md:col-span-4">
-              <Label htmlFor="source" className="text-black mb-2 block">
-                Where from?
-              </Label>
-              <Select onValueChange={setSource}>
-                <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder="Select departure airport" />
-                </SelectTrigger>
-                <SelectContent>
-                  {airportSuggestions.map((airport) => (
-                    <SelectItem key={airport.code} value={airport.code}>
-                      {airport.code} - {airport.name} ({airport.city})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="grid grid-cols-1 lg:grid-cols-9 gap-4 mb-6 items-center">
+            <div className="lg:col-span-2">
+              <SelectFlight
+                airport={mockAirports}
+                value={source}
+                onChange={setSource}
+                placeholder="Select departure airport"
+              />
             </div>
-            <div className="md:col-span-1 flex justify-center items-center">
+            <div className="lg:col-span-1 flex justify-center items-center">
               <ArrowLeftRight className="text-gray-400" />
             </div>
-            <div className="relative md:col-span-4">
-              <Label htmlFor="destination" className="text-black mb-2 block">
-                Where to?
-              </Label>
-              <Select onValueChange={setDestination}>
-                <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder="Select arrival airport" />
-                </SelectTrigger>
-                <SelectContent>
-                  {airportSuggestions.map((airport) => (
-                    <SelectItem key={airport.code} value={airport.code}>
-                      {airport.code} - {airport.name} ({airport.city})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="lg:col-span-2">
+              <SelectFlight
+                airport={mockAirports}
+                value={destination}
+                onChange={setDestination}
+                placeholder="Select arrival airport"
+              />
             </div>
-            <div className="md:col-span-4">
-              <Label htmlFor="departureDate" className="text-black mb-2 block">
-                Departure
-              </Label>
+            <div className="lg:col-span-2">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -177,52 +106,46 @@ export default function FlightSearch() {
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="md:col-span-1" />
-            {flightType === "roundTrip" && (
-              <div className="md:col-span-4">
-                <Label htmlFor="returnDate" className="text-black mb-2 block">
-                  Return
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="returnDate"
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !returnDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {returnDate ? (
-                        format(returnDate, "PPP")
-                      ) : (
-                        <span>Return Date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={returnDate}
-                      onSelect={setReturnDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
+            <div className="lg:col-span-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="returnDate"
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !returnDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {returnDate ? (
+                      format(returnDate, "PPP")
+                    ) : (
+                      <span>Return Date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={returnDate}
+                    onSelect={setReturnDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           <div className="flex items-center justify-end">
             <Button
               onClick={handleSearch}
-              className="bg-[#00897b] hover:bg-[#00796b] text-white"
+              className="bg-[#003E39] hover:bg-[#00796b] text-white"
               disabled={
                 isSearching ||
                 !source ||
                 !destination ||
                 !departureDate ||
-                (flightType === "roundTrip" && !returnDate)
+                !returnDate
               }
             >
               Search Flights
@@ -249,9 +172,15 @@ export default function FlightSearch() {
                 arrivalTime={flight.arrival}
                 duration={flight.travelTime}
                 source={flight.source}
+                sourceCode={flight.sourceCode}
                 destination={flight.destination}
+                destinationCode={flight.destinationCode}
                 stops={flight.numberOfStops}
                 fare={flight.fare}
+                returnSource={flight.returnSource}
+                returnDestination={flight.returnDestination}
+                returnDeparture={flight.returnDeparture}
+                returnArrival={flight.returnArrival}
               />
             ))}
           </div>
